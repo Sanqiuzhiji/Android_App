@@ -1,0 +1,31 @@
+# Android Studio / IntelliJ IDEA
+.idea/
+*.iml
+
+# Gradle / Kotlin cache
+.gradle/
+.kotlin/
+
+# Build output: ignore all module build folders
+**/build/
+
+# Local machine config
+local.properties
+
+# Native build cache, if later you use C/C++
+.externalNativeBuild/
+.cxx/
+
+# Generated captures / logs
+captures/
+*.log
+
+# Signing / secrets
+*.jks
+*.keystore
+keystore.properties
+signing.properties
+
+# OS files
+.DS_Store
+Thumbs.db

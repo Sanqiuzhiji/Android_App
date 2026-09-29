@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <link rel="stylesheet" href="leaflet.css">
+  <style>html,body,#map{height:100%;margin:0;background:#eef1f4}.leaflet-control-attribution{font-size:10px}</style>
+</head>
+<body>
+<div id="map"></div>
+<script src="leaflet.js"></script>
+<script>
+  function signal(kind, extra) { location.href = 'toolbox-place://' + kind + (extra ? '?' + extra : ''); }
+  try {
+    const initial = location.hash.slice(1).split(',').map(Number);
+    const map = L.map('map').setView([initial[0], initial[1]], initial[2]);
+    const loadedTiles = new Set();
+    const layer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    });
+    let marker;
+    function key(c) { return c.x + ':' + c.y + ':' + c.z; }
+    function centerReady() {
+      const tile = map.project(map.getCenter(), map.getZoom()).divideBy(256).floor();
+      tile.z = map.getZoom();
+      return loadedTiles.has(key(tile));
+    }
+    function status() { signal(centerReady() ? 'loaded' : 'unavailable'); }
+    layer.on('tileload', function(e) { loadedTiles.add(key(e.coords)); if (centerReady()) signal('loaded'); });
+    layer.on('tileunload', function(e) { loadedTiles.delete(key(e.coords)); });
+    layer.on('loading', function() { signal('loading'); });
+    layer.on('load', status);
+    layer.on('tileerror', function() { if (!centerReady()) signal('unavailable'); });
+    layer.addTo(map);
+    map.on('moveend', status);
+    map.on('click', function(e) {
+      const tile = map.project(e.latlng, map.getZoom()).divideBy(256).floor(); tile.z = map.getZoom();
+      if (!loadedTiles.has(key(tile))) { signal('unavailable'); return; }
+      if (marker) map.removeLayer(marker);
+      marker = L.circleMarker(e.latlng, {radius:9, color:'#ffffff', weight:3, fillColor:'#2563eb', fillOpacity:1}).addTo(map);
+      signal('select', 'lat=' + e.latlng.lat + '&lon=' + e.latlng.lng);
+    });
+    window.moveToPlace = function(lat, lon, zoom) {
+      if (marker) { map.removeLayer(marker); marker = null; }
+      map.setView([lat, lon], zoom);
+    };
+    signal('ready');
+  } catch (e) { signal('failed'); }
+</script>
+</body>
+</html>
